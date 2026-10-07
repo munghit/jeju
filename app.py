@@ -1,9 +1,10 @@
 import streamlit as st
-from datetime import datetime, timedelta
+from datetime import datetime, date, timedelta
+import math
 import re
 
 st.set_page_config(
-    page_title="여행 플래너",
+    page_title="Triply - 여행 플래너",
     page_icon="✈️",
     layout="wide"
 )
@@ -15,150 +16,161 @@ st.markdown("""
 <style>
 .stApp {
     background: #f7f8fc;
-    color: #222222;
+    color: #202124;
 }
 
-html, body, [class*="css"] {
-    font-family: Arial, sans-serif;
+.block-container {
+    max-width: 1150px;
+    padding-top: 2rem;
+    padding-bottom: 4rem;
 }
 
-h1, h2, h3, h4, h5, h6 {
-    color: #222222 !important;
+h1,h2,h3,h4,h5,h6 {
+    color: #202124 !important;
 }
 
-p, span, div, label {
-    color: #222222;
-}
-
-.stTextInput label,
-.stTextArea label {
-    color: #222222 !important;
-    font-weight: 600;
-}
-
-.stTextInput input,
-.stTextArea textarea {
-    background-color: #ffffff !important;
-    color: #222222 !important;
-    -webkit-text-fill-color: #222222 !important;
-    border: 1px solid #d9dce5 !important;
-    border-radius: 12px !important;
-}
-
-.stTextInput input::placeholder,
-.stTextArea textarea::placeholder {
-    color: #999999 !important;
-    -webkit-text-fill-color: #999999 !important;
-}
-
-.stTextInput input:focus,
-.stTextArea textarea:focus {
-    border-color: #7657e8 !important;
-    box-shadow: 0 0 0 1px #7657e8 !important;
-}
-
-.stButton button {
-    width: 100%;
-    background: #6c4ce5 !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 12px !important;
-    padding: 12px 20px !important;
-    font-weight: 700 !important;
-}
-
-.stButton button:hover {
-    background: #5738ca !important;
-    color: white !important;
+p,span,label,div {
+    color: #202124;
 }
 
 .hero {
-    background: linear-gradient(135deg, #6c4ce5, #8c6ff0);
-    padding: 42px;
-    border-radius: 24px;
+    background: linear-gradient(135deg,#6d4aff,#8d70ff);
+    border-radius: 28px;
+    padding: 42px 44px;
     margin-bottom: 30px;
-    color: white;
 }
 
 .hero h1 {
     color: white !important;
-    font-size: 42px;
-    margin-bottom: 10px;
+    font-size: 44px;
+    margin: 0;
+    font-weight: 800;
 }
 
 .hero p {
-    color: rgba(255,255,255,0.9) !important;
+    color: rgba(255,255,255,.9) !important;
     font-size: 17px;
+    margin-top: 10px;
 }
 
 .section-title {
-    font-size: 24px;
+    font-size: 23px;
     font-weight: 800;
-    margin-top: 25px;
-    margin-bottom: 15px;
-    color: #222222;
+    margin: 28px 0 15px;
 }
 
-.result-card {
+.stTextInput input,
+.stTextArea textarea {
+    background: white !important;
+    color: #202124 !important;
+    -webkit-text-fill-color: #202124 !important;
+    border: 1px solid #d9dce5 !important;
+    border-radius: 13px !important;
+}
+
+.stTextInput input::placeholder,
+.stTextArea textarea::placeholder {
+    color: #999 !important;
+    -webkit-text-fill-color: #999 !important;
+}
+
+.stDateInput input {
+    background: white !important;
+    color: #202124 !important;
+    -webkit-text-fill-color: #202124 !important;
+    border-radius: 13px !important;
+}
+
+.stDateInput label,
+.stTextInput label,
+.stTextArea label {
+    color: #202124 !important;
+    font-weight: 700 !important;
+}
+
+.stButton button {
+    width: 100%;
+    border: none !important;
+    border-radius: 14px !important;
+    background: #6d4aff !important;
+    color: white !important;
+    font-weight: 800 !important;
+    padding: 13px !important;
+}
+
+.stButton button:hover {
+    background: #5736d5 !important;
+    color: white !important;
+}
+
+.info-card {
     background: white;
+    border: 1px solid #e6e8ef;
     border-radius: 18px;
     padding: 20px;
-    margin-bottom: 14px;
-    border: 1px solid #e5e7ef;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+    margin-bottom: 12px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.035);
 }
 
-.result-card h3 {
-    color: #222222 !important;
-    margin-bottom: 6px;
-}
-
-.result-card p {
-    color: #555555 !important;
-}
-
-.day-title {
+.day-header {
     background: #eeeaff;
-    color: #5639c7 !important;
-    padding: 13px 18px;
-    border-radius: 12px;
+    color: #5d3fd0 !important;
+    border-radius: 14px;
+    padding: 14px 18px;
     font-weight: 800;
     margin-top: 25px;
     margin-bottom: 12px;
 }
 
-.place-card {
+.timeline {
+    position: relative;
+    padding-left: 12px;
+}
+
+.timeline-item {
     background: white;
-    border: 1px solid #e5e7ef;
-    border-radius: 15px;
-    padding: 16px;
+    border: 1px solid #e6e8ef;
+    border-radius: 17px;
+    padding: 18px;
     margin-bottom: 10px;
 }
 
-.place-card strong {
-    color: #222222;
+.timeline-time {
+    color: #6947df !important;
+    font-size: 14px;
+    font-weight: 800;
 }
 
-.place-card small {
-    color: #777777;
+.timeline-title {
+    color: #202124 !important;
+    font-size: 19px;
+    font-weight: 800;
+    margin-top: 5px;
 }
 
-.tag {
+.timeline-desc {
+    color: #666 !important;
+    margin-top: 5px;
+    font-size: 14px;
+}
+
+.badge {
     display: inline-block;
-    background: #eeeaff;
-    color: #5b40c9 !important;
+    padding: 5px 10px;
+    background: #f0ecff;
+    color: #6544d8 !important;
     border-radius: 20px;
-    padding: 5px 11px;
-    margin-right: 5px;
     font-size: 12px;
     font-weight: 700;
+    margin-right: 5px;
 }
 
 .summary {
-    background: linear-gradient(135deg, #6c4ce5, #8468ed);
+    background: linear-gradient(135deg,#6d4aff,#8265ed);
+    color: white;
     border-radius: 20px;
-    padding: 25px;
-    margin-top: 25px;
+    padding: 24px;
+    margin-top: 15px;
 }
 
 .summary h3,
@@ -167,303 +179,303 @@ p, span, div, label {
     color: white !important;
 }
 
-.restaurant-card {
+.restaurant {
     background: white;
-    border: 1px solid #e5e7ef;
+    border: 1px solid #e6e8ef;
     border-radius: 16px;
     padding: 18px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 
-.restaurant-card h4 {
-    color: #222222 !important;
+.restaurant h4 {
+    color: #202124 !important;
+    margin: 0 0 7px;
 }
 
-.restaurant-card p {
-    color: #666666 !important;
+.restaurant p {
+    color: #666 !important;
 }
 
-hr {
-    border: none;
-    border-top: 1px solid #e2e4eb;
-    margin: 30px 0;
+.footer {
+    text-align: center;
+    color: #999 !important;
+    padding: 30px 0;
 }
 </style>
 """, unsafe_allow_html=True)
 
 
 # =========================
-# 샘플 장소 데이터
+# 장소 데이터
 # =========================
-PLACE_DATA = {
+PLACES = {
     "성산일출봉": {
         "area": "성산",
-        "time": "08:00",
-        "duration": 120,
-        "description": "제주 동쪽을 대표하는 일출 명소"
+        "duration": 100,
+        "type": "관광"
     },
     "섭지코지": {
         "area": "성산",
-        "time": "09:00",
         "duration": 90,
-        "description": "해안 풍경을 즐기기 좋은 산책 명소"
+        "type": "관광"
     },
     "우도": {
-        "area": "성산",
-        "time": "08:00",
-        "duration": 240,
-        "description": "배를 타고 들어가는 제주 대표 섬 여행지"
+        "area": "우도",
+        "duration": 300,
+        "type": "관광"
     },
     "월정리": {
         "area": "동부",
-        "time": "10:00",
-        "duration": 120,
-        "description": "해변과 카페가 유명한 지역"
+        "duration": 100,
+        "type": "관광"
     },
     "함덕해수욕장": {
         "area": "동부",
-        "time": "09:00",
-        "duration": 120,
-        "description": "맑은 바다와 해변 산책을 즐길 수 있는 곳"
+        "duration": 100,
+        "type": "관광"
     },
     "동문시장": {
         "area": "제주시",
-        "time": "09:00",
-        "duration": 120,
-        "description": "제주 대표 전통시장"
+        "duration": 90,
+        "type": "관광"
     },
     "용두암": {
         "area": "제주시",
-        "time": "08:00",
         "duration": 60,
-        "description": "제주시 도심에서 접근하기 좋은 해안 명소"
+        "type": "관광"
     },
     "협재해수욕장": {
         "area": "서부",
-        "time": "09:00",
-        "duration": 150,
-        "description": "에메랄드빛 바다로 유명한 해수욕장"
+        "duration": 120,
+        "type": "관광"
     },
     "애월": {
         "area": "서부",
-        "time": "10:00",
-        "duration": 150,
-        "description": "바다를 보며 카페와 산책을 즐기기 좋은 지역"
+        "duration": 120,
+        "type": "관광"
     },
     "오설록": {
         "area": "서부",
-        "time": "09:00",
         "duration": 120,
-        "description": "녹차밭과 티 뮤지엄으로 유명한 장소"
+        "type": "관광"
     }
 }
 
 
 # =========================
-# 샘플 음식점
+# 지역별 이동시간
 # =========================
-RESTAURANTS = [
-    {
-        "name": "제주 흑돼지 맛집",
-        "area": "제주시",
-        "type": "흑돼지",
-        "description": "제주에서 흑돼지를 즐기기 좋은 곳"
-    },
-    {
-        "name": "해산물 맛집",
-        "area": "성산",
-        "type": "해산물",
-        "description": "성산 주변에서 제주 해산물을 즐기기 좋은 곳"
-    },
-    {
-        "name": "애월 바다 카페",
-        "area": "서부",
-        "type": "카페",
-        "description": "바다 전망을 즐길 수 있는 카페"
-    },
-    {
-        "name": "월정리 카페",
-        "area": "동부",
-        "type": "카페",
-        "description": "월정리 해변 근처 카페"
-    }
-]
+AREA_DISTANCE = {
+    ("제주시","동부"): 45,
+    ("제주시","성산"): 70,
+    ("제주시","서부"): 50,
+    ("제주시","우도"): 90,
+    ("동부","성산"): 35,
+    ("동부","서부"): 70,
+    ("동부","우도"): 60,
+    ("성산","서부"): 90,
+    ("성산","우도"): 30,
+    ("서부","우도"): 120
+}
+
+
+def travel_time(area1, area2):
+    if area1 == area2:
+        return 15
+
+    return AREA_DISTANCE.get(
+        (area1, area2),
+        AREA_DISTANCE.get((area2, area1), 60)
+    )
 
 
 # =========================
-# 함수
+# 입력 장소 정리
 # =========================
-def parse_date(text):
-    text = text.strip()
-
-    formats = [
-        "%Y.%m.%d",
-        "%Y-%m-%d",
-        "%Y/%m/%d",
-        "%Y. %m. %d.",
-        "%Y년 %m월 %d일"
-    ]
-
-    for fmt in formats:
-        try:
-            return datetime.strptime(text, fmt)
-        except ValueError:
-            pass
-
-    return None
-
-
 def parse_places(text):
-    if not text:
-        return []
-
     text = text.replace("\n", ",")
     text = text.replace("/", ",")
     text = text.replace("·", ",")
 
-    places = []
+    result = []
 
     for item in text.split(","):
         item = item.strip()
 
-        if item and item not in places:
-            places.append(item)
+        if item and item not in result:
+            result.append(item)
 
-    return places
-
-
-def analyze_preference(text):
-    text = text.lower()
-
-    if any(word in text for word in [
-        "여유",
-        "천천히",
-        "느긋",
-        "편하게"
-    ]):
-        style = "여유로운 일정"
-    elif any(word in text for word in [
-        "많이",
-        "빡빡",
-        "최대한",
-        "알차게"
-    ]):
-        style = "알찬 일정"
-    else:
-        style = "균형 잡힌 일정"
-
-    if any(word in text for word in [
-        "늦게 출발",
-        "천천히 출발"
-    ]):
-        start_hour = 10
-    elif "일찍" in text:
-        start_hour = 7
-    else:
-        start_hour = 9
-
-    if any(word in text for word in [
-        "늦게까지",
-        "밤까지"
-    ]):
-        end_hour = 23
-    else:
-        end_hour = 20
-
-    return style, start_hour, end_hour
+    return result
 
 
-def estimate_travel_time(area1, area2):
-    if area1 == area2:
-        return 10
+def find_place_data(name):
+    if name in PLACES:
+        return PLACES[name]
 
-    pairs = {
-        ("제주시", "동부"): 45,
-        ("제주시", "성산"): 70,
-        ("제주시", "서부"): 50,
-        ("동부", "성산"): 35,
-        ("동부", "서부"): 70,
-        ("성산", "서부"): 90
+    for key in PLACES:
+        if key in name or name in key:
+            return PLACES[key]
+
+    return {
+        "area": "제주",
+        "duration": 90,
+        "type": "관광"
     }
 
-    key = (area1, area2)
 
-    if key in pairs:
-        return pairs[key]
+# =========================
+# 여행 스타일 분석
+# =========================
+def analyze_style(text):
+    text = text.lower()
 
-    reverse_key = (area2, area1)
+    if any(x in text for x in [
+        "여유",
+        "느긋",
+        "천천히",
+        "편하게",
+        "빡빡하지 않"
+    ]):
+        return {
+            "name": "여유롭게",
+            "start": 9,
+            "end": 20,
+            "buffer": 25
+        }
 
-    if reverse_key in pairs:
-        return pairs[reverse_key]
+    if any(x in text for x in [
+        "빡빡",
+        "많이",
+        "최대한",
+        "알차",
+        "많은 곳"
+    ]):
+        return {
+            "name": "알차게",
+            "start": 8,
+            "end": 21,
+            "buffer": 10
+        }
 
-    return 60
+    return {
+        "name": "균형 있게",
+        "start": 9,
+        "end": 20,
+        "buffer": 15
+    }
 
 
-def generate_itinerary(places, days, start_hour, end_hour, style):
-    itinerary = []
+# =========================
+# 장소를 지역별로 묶기
+# =========================
+def group_places(places):
+    groups = {}
 
-    if not places:
-        return itinerary
+    for place in places:
+        data = find_place_data(place)
+        area = data["area"]
 
-    if days <= 0:
-        days = 1
+        if area not in groups:
+            groups[area] = []
 
-    chunks = [[] for _ in range(days)]
+        groups[area].append(place)
+
+    return groups
+
+
+# =========================
+# 일정 분배
+# =========================
+def distribute_places(places, days):
+    groups = group_places(places)
+
+    # 지역을 최대한 같은 날짜에 배치
+    region_groups = list(groups.values())
+
+    result = [[] for _ in range(days)]
+
+    # 큰 지역부터 배치
+    region_groups.sort(
+        key=lambda x: len(x),
+        reverse=True
+    )
+
+    for group in region_groups:
+        # 현재 가장 적은 장소가 들어간 날짜
+        target = min(
+            range(days),
+            key=lambda i: len(result[i])
+        )
+
+        result[target].extend(group)
+
+    return result
+
+
+# =========================
+# 하루 일정 생성
+# =========================
+def create_day_schedule(
+    places,
+    day_start,
+    day_end,
+    buffer_time
+):
+    schedule = []
+
+    current = day_start
+    previous_area = None
 
     for index, place in enumerate(places):
-        chunks[index % days].append(place)
+        data = find_place_data(place)
 
-    for day_index, day_places in enumerate(chunks):
-        if not day_places:
-            continue
-
-        current_time = start_hour * 60
-        day_items = []
-        previous_area = None
-
-        for place in day_places:
-            data = PLACE_DATA.get(
-                place,
-                {
-                    "area": "제주",
-                    "time": "09:00",
-                    "duration": 90,
-                    "description": "여행지"
-                }
+        # 이동
+        if previous_area:
+            move = travel_time(
+                previous_area,
+                data["area"]
             )
 
-            if previous_area:
-                travel_time = estimate_travel_time(
-                    previous_area,
-                    data["area"]
-                )
-                current_time += travel_time
+            current += timedelta(
+                minutes=move
+            )
 
-            hour = current_time // 60
-            minute = current_time % 60
+        if current.hour >= day_end:
+            break
 
-            if hour >= end_hour:
-                break
+        arrival = current
 
-            time_text = f"{hour:02d}:{minute:02d}"
+        duration = data["duration"]
 
-            day_items.append({
-                "time": time_text,
-                "place": place,
-                "area": data["area"],
-                "duration": data["duration"],
-                "description": data["description"]
-            })
+        departure = arrival + timedelta(
+            minutes=duration
+        )
 
-            current_time += data["duration"]
-            previous_area = data["area"]
+        if departure.hour > day_end:
+            break
 
-        itinerary.append({
-            "day": day_index + 1,
-            "items": day_items
+        schedule.append({
+            "place": place,
+            "area": data["area"],
+            "arrival": arrival,
+            "departure": departure,
+            "duration": duration
         })
 
-    return itinerary
+        current = departure + timedelta(
+            minutes=buffer_time
+        )
+
+        previous_area = data["area"]
+
+    return schedule
+
+
+# =========================
+# 시간 표시
+# =========================
+def time_text(dt):
+    return dt.strftime("%H:%M")
 
 
 # =========================
@@ -471,14 +483,17 @@ def generate_itinerary(places, days, start_hour, end_hour, style):
 # =========================
 st.markdown("""
 <div class="hero">
-    <h1>✈️ 여행 플래너</h1>
-    <p>가고 싶은 곳과 여행 스타일만 입력하면 나만의 여행 일정을 만들어드려요.</p>
+    <h1>✈️ Triply</h1>
+    <p>
+        가고 싶은 곳만 입력하세요.
+        이동 동선과 시간까지 고려해서 여행 일정을 자동으로 만들어드릴게요.
+    </p>
 </div>
 """, unsafe_allow_html=True)
 
 
 # =========================
-# 입력
+# 여행 기본 정보
 # =========================
 st.markdown(
     '<div class="section-title">여행 정보를 입력해주세요</div>',
@@ -495,29 +510,29 @@ hotel = st.text_input(
     placeholder="예: 제주 시내 호텔"
 )
 
-col1, col2 = st.columns(2)
+date_col1, date_col2 = st.columns(2)
 
-with col1:
-    start_date_text = st.text_input(
+with date_col1:
+    start_date = st.date_input(
         "여행 시작일",
-        placeholder="예: 2026.10.20"
+        value=date.today()
     )
 
-with col2:
-    end_date_text = st.text_input(
+with date_col2:
+    end_date = st.date_input(
         "여행 종료일",
-        placeholder="예: 2026.10.23"
+        value=date.today() + timedelta(days=2)
     )
 
 places_text = st.text_area(
     "가고 싶은 장소",
-    placeholder="예: 성산일출봉, 섭지코지, 우도, 월정리, 함덕해수욕장",
-    height=110
+    placeholder="예: 성산일출봉, 우도, 섭지코지, 월정리, 함덕해수욕장",
+    height=120
 )
 
 preference = st.text_area(
     "여행 스타일",
-    placeholder="예: 너무 빡빡하지 않게 하고 싶고 맛집과 카페도 많이 가고 싶어요.",
+    placeholder="예: 너무 빡빡하지 않게 하고 싶고 카페도 가고 싶어요.",
     height=100
 )
 
@@ -532,22 +547,10 @@ transport = st.text_input(
 # =========================
 st.markdown("")
 
-if st.button("✨ 여행 일정 만들기"):
+if st.button("✨ 내 여행 일정 만들기"):
+
     if not destination.strip():
         st.error("여행지를 입력해주세요.")
-        st.stop()
-
-    if not start_date_text.strip() or not end_date_text.strip():
-        st.error("여행 시작일과 종료일을 입력해주세요.")
-        st.stop()
-
-    start_date = parse_date(start_date_text)
-    end_date = parse_date(end_date_text)
-
-    if not start_date or not end_date:
-        st.error(
-            "날짜 형식을 확인해주세요. 예: 2026.10.20"
-        )
         st.stop()
 
     if end_date < start_date:
@@ -557,25 +560,21 @@ if st.button("✨ 여행 일정 만들기"):
     places = parse_places(places_text)
 
     if not places:
-        st.error("가고 싶은 장소를 하나 이상 입력해주세요.")
+        st.error("가고 싶은 장소를 입력해주세요.")
         st.stop()
 
     days = (end_date - start_date).days + 1
 
-    style, start_hour, end_hour = analyze_preference(
-        preference
-    )
+    style = analyze_style(preference)
 
-    itinerary = generate_itinerary(
+    # 일정 분배
+    daily_places = distribute_places(
         places,
-        days,
-        start_hour,
-        end_hour,
-        style
+        days
     )
 
     # =========================
-    # 여행 요약
+    # 요약
     # =========================
     st.markdown(
         '<div class="section-title">여행 요약</div>',
@@ -585,117 +584,227 @@ if st.button("✨ 여행 일정 만들기"):
     st.markdown(f"""
     <div class="summary">
         <h3>📍 {destination}</h3>
-        <p><strong>숙소</strong>　{hotel if hotel else "입력하지 않음"}</p>
-        <p><strong>기간</strong>　{start_date.strftime("%Y.%m.%d")} ~ {end_date.strftime("%Y.%m.%d")}</p>
-        <p><strong>여행일</strong>　{days}일</p>
-        <p><strong>이동수단</strong>　{transport if transport else "입력하지 않음"}</p>
-        <p><strong>여행 스타일</strong>　{style}</p>
+        <p><strong>숙소</strong>　{hotel if hotel else "미입력"}</p>
+        <p>
+            <strong>여행 기간</strong>　
+            {start_date.strftime("%Y.%m.%d")}
+            ~
+            {end_date.strftime("%Y.%m.%d")}
+        </p>
+        <p><strong>여행 일수</strong>　{days}일</p>
+        <p><strong>이동수단</strong>　{transport if transport else "미입력"}</p>
+        <p><strong>일정 스타일</strong>　{style["name"]}</p>
     </div>
     """, unsafe_allow_html=True)
+
 
     # =========================
     # 일정
     # =========================
     st.markdown(
-        '<div class="section-title">추천 일정</div>',
+        '<div class="section-title">🗓️ 자동 생성된 여행 일정</div>',
         unsafe_allow_html=True
     )
 
-    for day in itinerary:
-        actual_date = start_date + timedelta(days=day["day"] - 1)
+    total_places = 0
+    total_minutes = 0
+
+    for day_index in range(days):
+
+        current_date = start_date + timedelta(
+            days=day_index
+        )
+
+        day_places = daily_places[day_index]
+
+        day_schedule = create_day_schedule(
+            day_places,
+            current_date.replace(
+                hour=style["start"],
+                minute=0
+            ),
+            style["end"],
+            style["buffer"]
+        )
 
         st.markdown(
             f"""
-            <div class="day-title">
-                DAY {day["day"]} · {actual_date.strftime("%m월 %d일")}
+            <div class="day-header">
+                DAY {day_index + 1}
+                ·
+                {current_date.strftime("%m월 %d일")}
             </div>
             """,
             unsafe_allow_html=True
         )
 
-        if not day["items"]:
-            st.info("이 날에는 추천 일정이 없습니다.")
+        if not day_schedule:
+            st.markdown(
+                """
+                <div class="info-card">
+                    여유로운 자유시간으로 남겨두었습니다.
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
             continue
 
-        for item in day["items"]:
-            duration_hours = item["duration"] // 60
+        for item_index, item in enumerate(day_schedule):
 
-            if item["duration"] % 60:
-                duration_text = (
-                    f"{duration_hours}시간 "
-                    f"{item['duration'] % 60}분"
-                )
-            else:
-                duration_text = f"{duration_hours}시간"
+            total_places += 1
+            total_minutes += item["duration"]
 
             st.markdown(
                 f"""
-                <div class="place-card">
-                    <div>
-                        <span class="tag">{item["time"]}</span>
-                        <span class="tag">{item["area"]}</span>
+                <div class="timeline-item">
+                    <div class="timeline-time">
+                        {time_text(item["arrival"])}
+                        ~
+                        {time_text(item["departure"])}
                     </div>
-                    <br>
-                    <strong style="font-size:19px;">
+
+                    <div class="timeline-title">
                         {item["place"]}
-                    </strong>
-                    <p>{item["description"]}</p>
-                    <small>예상 체류시간 · {duration_text}</small>
+                    </div>
+
+                    <div>
+                        <span class="badge">
+                            {item["area"]}
+                        </span>
+                        <span class="badge">
+                            {item["duration"] // 60}시간
+                            {item["duration"] % 60 if item["duration"] % 60 else ""}분
+                        </span>
+                    </div>
+
+                    <div class="timeline-desc">
+                        장소 이동과 체류시간을 고려해 자동 배치된 일정입니다.
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
+            # 다음 장소 이동시간
+            if item_index < len(day_schedule) - 1:
+                next_item = day_schedule[item_index + 1]
+
+                move_minutes = travel_time(
+                    item["area"],
+                    next_item["area"]
+                )
+
+                st.markdown(
+                    f"""
+                    <div style="
+                        text-align:center;
+                        color:#888 !important;
+                        font-size:13px;
+                        padding:4px;
+                    ">
+                        🚗 다음 장소까지 약 {move_minutes}분 이동
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+
     # =========================
-    # 지도
+    # 통계
     # =========================
     st.markdown(
-        '<div class="section-title">🗺️ 이동 경로</div>',
+        '<div class="section-title">📊 일정 요약</div>',
         unsafe_allow_html=True
     )
 
-    st.markdown("""
-    <div class="result-card">
-        <h3>여행 경로 지도</h3>
-        <p>
-            현재 버전에서는 지도 API 연결 전 단계입니다.
-            이후 실제 장소의 좌표를 이용해 이동 경로와 예상 이동시간을 표시할 수 있습니다.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+    hours = total_minutes // 60
+    minutes = total_minutes % 60
 
-    # =========================
-    # 맛집 / 카페
-    # =========================
-    st.markdown(
-        '<div class="section-title">🍴 일정 주변 추천</div>',
-        unsafe_allow_html=True
-    )
+    col1, col2, col3 = st.columns(3)
 
-    for restaurant in RESTAURANTS:
+    with col1:
         st.markdown(
             f"""
-            <div class="restaurant-card">
-                <h4>{restaurant["name"]}</h4>
-                <p>
-                    <span class="tag">{restaurant["area"]}</span>
-                    <span class="tag">{restaurant["type"]}</span>
-                </p>
-                <p>{restaurant["description"]}</p>
+            <div class="info-card">
+                <strong>방문 장소</strong>
+                <h2>{total_places}곳</h2>
             </div>
             """,
             unsafe_allow_html=True
         )
 
+    with col2:
+        st.markdown(
+            f"""
+            <div class="info-card">
+                <strong>예상 관광시간</strong>
+                <h2>{hours}시간 {minutes}분</h2>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with col3:
+        st.markdown(
+            f"""
+            <div class="info-card">
+                <strong>여행 스타일</strong>
+                <h2>{style["name"]}</h2>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+
     # =========================
-    # 안내
+    # 맛집 / 카페
     # =========================
-    st.markdown("---")
+    st.markdown(
+        '<div class="section-title">🍴 식사 & 카페</div>',
+        unsafe_allow_html=True
+    )
 
     st.markdown("""
-    <div style="text-align:center; padding:20px;">
-        <p style="color:#888 !important;">
-            여행 일정은 입력한 장소와 여행 스타일을 기준으로 구성됩니다.
+    <div class="restaurant">
+        <h4>🍽️ 점심시간</h4>
+        <p>
+            오전 일정과 오후 일정 사이에 약 1시간의 식사시간을
+            자동으로 배치할 수 있습니다.
+        </p>
+    </div>
+
+    <div class="restaurant">
+        <h4>☕ 카페</h4>
+        <p>
+            실제 장소 데이터를 연결하면 현재 동선에서 가장 가까운
+            카페와 맛집을 자동으로 추천할 수 있습니다.
         </p>
     </div>
     """, unsafe_allow_html=True)
+
+
+    # =========================
+    # 지도
+    # =========================
+    st.markdown(
+        '<div class="section-title">🗺️ 여행 동선</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown("""
+    <div class="info-card">
+        <h3>실제 지도 API 연결 예정</h3>
+        <p>
+            현재는 일정 최적화 구조를 먼저 구현한 상태입니다.
+            다음 단계에서는 실제 장소 좌표와 도로 이동시간을 연결해서
+            지도 위에 하루별 이동경로를 표시할 수 있습니다.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+st.markdown("""
+<div class="footer">
+    Triply · 나만의 여행 일정을 더 쉽게
+</div>
+""", unsafe_allow_html=True)
